@@ -18,8 +18,9 @@ impl From<TileCreationError> for MapError {
     }
 }
 impl Map {
-    const HEIGHT: usize = 25;
-    const WIDTH: usize = 49;
+    pub const HEIGHT: usize = 25;
+    pub const TILESIZE: usize = 15;
+    pub const WIDTH: usize = 49;
 
     pub fn new() -> Self {
         Self {
@@ -79,6 +80,12 @@ impl Map {
         } else {
             None
         }
+    }
+
+    pub fn index_to_xy(index: usize) -> (usize, usize) {
+        let y = index / (Map::WIDTH);
+        let x = index % (Map::WIDTH);
+        (x, y)
     }
 
     pub fn decode(s: String) -> Result<Map, MapError> {
