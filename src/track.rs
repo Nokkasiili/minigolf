@@ -64,14 +64,27 @@ impl FromPrimitive for TrackTypeFlags {
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct Settings {
-    pub illusion_wall_shadows: bool,
     pub magnets_visible: bool,
-    pub max_players: i32,
-    pub min_players: i32,
     pub mines_visible: bool,
     pub teleport_colors: bool,
+    pub illusion_wall_shadows: bool,
+    pub max_players: i32,
+    pub min_players: i32,
+}
+
+impl Default for Settings {
+    fn default() -> Self {
+        Self {
+            magnets_visible: true,
+            mines_visible: false,
+            teleport_colors: false,
+            illusion_wall_shadows: false,
+            max_players: 1,
+            min_players: 4,
+        }
+    }
 }
 
 impl FromStr for Settings {
