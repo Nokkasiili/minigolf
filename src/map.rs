@@ -40,8 +40,8 @@ pub enum MapError {
     ParseIntError(#[from] ParseIntError),
 }
 
-impl Ad {
-    pub fn get_ad_size(size: AdSize) -> Vector2D<i32> {
+impl AdSize {
+    pub fn get_ad_size(size: &Self) -> Vector2D<i32> {
         match size {
             AdSize::Small => Vector2D { x: 3, y: 2 },
             AdSize::Medium => Vector2D { x: 5, y: 3 },
@@ -49,7 +49,9 @@ impl Ad {
             AdSize::Full => Vector2D { x: 49, y: 25 },
         }
     }
+}
 
+impl Ad {
     pub fn from_string(input: &str) -> Result<Vec<Ad>, MapError> {
         let mut ads = Vec::new();
         for chunk in input.chars().collect::<Vec<char>>().chunks(5) {
