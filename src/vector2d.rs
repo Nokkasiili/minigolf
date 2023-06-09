@@ -1,7 +1,7 @@
 use num_traits::Float;
 use std::convert::From;
 use std::fmt;
-use std::ops::{Add, Div, Mul, Neg, Sub,AddAssign};
+use std::ops::{Add, AddAssign, Div, Mul, Neg, Sub};
 #[derive(Debug, Copy, Clone)]
 pub struct Vector2D<T> {
     pub x: T,

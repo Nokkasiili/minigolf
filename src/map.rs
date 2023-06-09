@@ -1,22 +1,75 @@
 use crate::tile::{Tile, TileCreationError};
+use crate::vector2d::Vector2D;
+use num_derive::FromPrimitive;
+use num_traits::FromPrimitive;
+use std::num::ParseIntError;
+use thiserror::Error;
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct Map {
     pub tiles: Vec<Tile>,
+    pub ads: Vec<Ad>,
+}
+
+#[derive(Debug, FromPrimitive, PartialEq)]
+pub enum AdSize {
+    Small,
+    Medium,
+    Large,
+    Full,
 }
 
 #[derive(Debug)]
-pub enum MapError {
-    OutOfBounds,
-    Unexpected(char),
-    UnexpectedEol,
-    TileCreationError(TileCreationError),
+pub struct Ad {
+    size: AdSize,
+    x: i32,
+    y: i32,
 }
-impl From<TileCreationError> for MapError {
-    fn from(error: TileCreationError) -> Self {
-        MapError::TileCreationError(error)
+
+#[derive(Debug, Error)]
+pub enum MapError {
+    #[error("Out of Bounds")]
+    OutOfBounds,
+    #[error("Unexpected char {0}")]
+    Unexpected(char),
+    #[error("Unexpected end of line")]
+    UnexpectedEol,
+    #[error("TileCreation Error")]
+    TileCreationError(#[from] TileCreationError),
+    #[error("ParseInt Error")]
+    ParseIntError(#[from] ParseIntError),
+}
+
+impl Ad {
+    pub fn get_ad_size(size: AdSize) -> Vector2D<i32> {
+        match size {
+            AdSize::Small => Vector2D { x: 3, y: 2 },
+            AdSize::Medium => Vector2D { x: 5, y: 3 },
+            AdSize::Large => Vector2D { x: 8, y: 5 },
+            AdSize::Full => Vector2D { x: 49, y: 25 },
+        }
+    }
+
+    pub fn from_string(input: &str) -> Result<Vec<Ad>, MapError> {
+        let mut ads = Vec::new();
+        for chunk in input.chars().collect::<Vec<char>>().chunks(5) {
+            if let Some((first_char, last_chars)) = chunk.split_first() {
+                let ad_code = Map::char_to_code(*first_char)
+                    .ok_or_else(|| MapError::Unexpected(*first_char))?;
+                if last_chars.len() != 4 {
+                    return Err(MapError::UnexpectedEol);
+                }
+                let size: AdSize = FromPrimitive::from_i32(ad_code)
+                    .ok_or_else(|| MapError::Unexpected(*first_char))?;
+                let x = last_chars[..2].iter().collect::<String>().parse::<i32>()?;
+                let y = last_chars[2..].iter().collect::<String>().parse::<i32>()?;
+                ads.push(Ad { size, x, y })
+            }
+        }
+        Ok(ads)
     }
 }
+
 impl Map {
     pub const HEIGHT: usize = 25;
     pub const TILESIZE: usize = 15;
@@ -25,7 +78,18 @@ impl Map {
     pub fn new() -> Self {
         Self {
             tiles: vec![Tile::default(); Map::WIDTH * Map::HEIGHT],
+            ads: Vec::new(),
         }
+    }
+
+    pub fn from_string(input: &str) -> Result<Map, MapError> {
+        let mut split = input.split(",Ads:");
+        let map_str = split.next().unwrap_or("");
+        let ads_str = split.next().unwrap_or("");
+        let decompressed = Map::decompress(map_str);
+        let mut map = Map::decode(decompressed)?;
+        map.ads = Ad::from_string(ads_str)?;
+        Ok(map)
     }
 
     pub fn decompress(input: &str) -> String {
@@ -99,20 +163,28 @@ impl Map {
                         'A' | 'C' => {
                             let a = iter.next().ok_or_else(|| MapError::UnexpectedEol)?;
                             let b = iter.next().ok_or_else(|| MapError::UnexpectedEol)?;
-                            let a_code = Map::char_to_code(a);
-                            let b_code = Map::char_to_code(b);
-                            let tile = Tile::from_i32s(Map::char_to_code(cur), a_code, b_code, 0)?;
+                            let a_code =
+                                Map::char_to_code(a).ok_or_else(|| MapError::Unexpected(a))?;
+                            let b_code =
+                                Map::char_to_code(b).ok_or_else(|| MapError::Unexpected(b))?;
+                            let cur =
+                                Map::char_to_code(cur).ok_or_else(|| MapError::Unexpected(b))?;
+                            let tile = Tile::from_i32s(cur, a_code, b_code, 0)?;
                             map.set_tile(x, y, tile)?;
                         }
                         'B' => {
                             let a = iter.next().ok_or_else(|| MapError::UnexpectedEol)?;
                             let b = iter.next().ok_or_else(|| MapError::UnexpectedEol)?;
                             let c = iter.next().ok_or_else(|| MapError::UnexpectedEol)?;
-                            let a_code = Map::char_to_code(a);
-                            let b_code = Map::char_to_code(b);
-                            let c_code = Map::char_to_code(c);
-                            let tile =
-                                Tile::from_i32s(Map::char_to_code(cur), a_code, b_code, c_code)?;
+                            let a_code =
+                                Map::char_to_code(a).ok_or_else(|| MapError::Unexpected(a))?;
+                            let b_code =
+                                Map::char_to_code(b).ok_or_else(|| MapError::Unexpected(b))?;
+                            let c_code =
+                                Map::char_to_code(c).ok_or_else(|| MapError::Unexpected(c))?;
+                            let cur =
+                                Map::char_to_code(cur).ok_or_else(|| MapError::Unexpected(b))?;
+                            let tile = Tile::from_i32s(cur, a_code, b_code, c_code)?;
                             map.set_tile(x, y, tile)?;
                         }
                         'D' | 'E' | 'F' | 'G' | 'H' | 'I' => {
@@ -139,11 +211,11 @@ impl Map {
         Ok(map)
     }
 
-    fn char_to_code(c: char) -> i32 {
+    fn char_to_code(c: char) -> Option<i32> {
         match c {
-            'a'..='z' => c as i32 - 'a' as i32 + 26,
-            'A'..='Z' => c as i32 - 'A' as i32,
-            _ => unreachable!(),
+            'a'..='z' => Some(c as i32 - 'a' as i32 + 26),
+            'A'..='Z' => Some(c as i32 - 'A' as i32),
+            _ => None,
         }
     }
 
@@ -156,6 +228,50 @@ impl Map {
             'H' => (2, 0),
             'I' => (2, 2),
             _ => (0, 0),
+        }
+    }
+}
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_char_to_code() {
+        assert_eq!(Map::char_to_code('a'), Some(26));
+        assert_eq!(Map::char_to_code('z'), Some(51));
+        assert_eq!(Map::char_to_code('A'), Some(0));
+        assert_eq!(Map::char_to_code('Z'), Some(25));
+        assert_eq!(Map::char_to_code('!'), None);
+    }
+
+    #[test]
+    fn test_from_string() {
+        let input = "A2309B2208C4019";
+        let expected_output = vec![
+            Ad {
+                size: AdSize::Small,
+                x: 23,
+                y: 9,
+            },
+            Ad {
+                size: AdSize::Medium,
+                x: 22,
+                y: 8,
+            },
+            Ad {
+                size: AdSize::Large,
+                x: 40,
+                y: 19,
+            },
+        ];
+
+        let result = Ad::from_string(input).unwrap();
+        assert_eq!(result.len(), expected_output.len());
+
+        for (actual, expected) in result.iter().zip(expected_output.iter()) {
+            assert_eq!(actual.size, expected.size);
+            assert_eq!(actual.x, expected.x);
+            assert_eq!(actual.y, expected.y);
         }
     }
 }

@@ -6,6 +6,9 @@ use std::io::{BufRead, BufReader};
 use std::str::FromStr;
 use thiserror::Error;
 
+use crate::map::Map;
+use crate::map::MapError;
+
 #[derive(Debug)]
 pub struct Record {
     pub name: String,
@@ -21,7 +24,7 @@ pub struct Track {
     pub settings: Settings,
     pub ratings: Vec<i32>,
     pub stroke_info: Vec<i32>,
-    pub map: String,
+    pub map: Map,
     pub record: Record,
 }
 
@@ -32,6 +35,9 @@ pub enum ParseError {
 
     #[error("Invalid file format")]
     InvalidFormat,
+
+    #[error("Map error: {0}")]
+    MapError(#[from] MapError),
 }
 
 bitflags! {
@@ -129,7 +135,7 @@ impl Track {
             settings: Settings::default(),
             ratings: Vec::new(),
             stroke_info: Vec::new(),
-            map: String::new(),
+            map: Map::default(),
             record: Record {
                 name: String::new(),
                 timestamp: NaiveDateTime::default(),
@@ -176,7 +182,7 @@ impl Track {
                         .parse::<Settings>()
                         .map_err(|_| ParseError::InvalidFormat)?;
                 }
-                "T" => track.map = data.to_owned(),
+                "T" => track.map = Map::from_string(data)?,
                 "R" => {
                     let ratings: Vec<i32> = data
                         .split(',')
@@ -220,5 +226,24 @@ impl Track {
         let file = File::open(filepath)?;
         let mut reader = BufReader::new(file);
         Track::from_reader(&mut reader)
+    }
+}
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_from_filepath() {
+        let filepath = "testi.track";
+
+        let result = Track::from_filepath(filepath);
+
+        assert!(result.is_ok());
+
+        let track = result.unwrap();
+
+        assert_eq!(track.version, 2);
+        assert_eq!(track.map.ads.len(), 3);
+        // assert_eq!(track.title, "Some Title");
     }
 }

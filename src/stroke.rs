@@ -20,7 +20,10 @@ impl ShootingMode {
 struct Stroke {}
 
 impl Stroke {
-    pub fn calculate_stroke_power(origin: Vector2D<f32>, mouse_position: Vector2D<f32>) -> Vector2D<f32> {
+    pub fn calculate_stroke_power(
+        origin: Vector2D<f32>,
+        mouse_position: Vector2D<f32>,
+    ) -> Vector2D<f32> {
         let displacement = mouse_position - origin;
         let distance = displacement.length();
         let mut scale = (distance - 5.0) / 30.0;
@@ -87,9 +90,8 @@ mod tests {
             Vector2D::new(1.5038857916963326, 5.223173233525973),
         ];
 
-        for (i, &coords) in mouse_coords.iter().enumerate() {
+        for (&coords, &result) in mouse_coords.iter().zip(results.iter()) {
             let power = Stroke::calculate_stroke_power(point, coords);
-            let result = results[i];
             assert!(approx_eq(power.x, result.x));
             assert!(approx_eq(power.y, result.y));
         }
@@ -114,21 +116,19 @@ mod tests {
             ShootingMode::Right,
             ShootingMode::Left,
         ];
-        let expected_results = vec![
+        let results = vec![
             Vector2D::new(5.283868950354069, 3.159761474460588),
             Vector2D::new(-0.025247113706855367, -1.6627026133673766),
             Vector2D::new(2.8589116702757917, -5.958293636331584),
             Vector2D::new(-0.479600774949725, 0.2289881419932628),
         ];
 
-        for i in 0..4 {
-            let location = locations[i];
-            let mouse_coord = mouse_coords[i];
-            let shooting_mode = shooting_modes[i];
-            let expected_result = expected_results[i];
-
+        for ((&location, &mouse_coord), (&shooting_mode, &expected_result)) in locations
+            .iter()
+            .zip(mouse_coords.iter())
+            .zip(shooting_modes.iter().zip(results.iter()))
+        {
             let speed = Stroke::calculate_speed(location, mouse_coord, shooting_mode);
-
             assert!(approx_eq(speed.x, expected_result.x));
             assert!(approx_eq(speed.y, expected_result.y));
         }
