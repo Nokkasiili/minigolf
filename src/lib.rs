@@ -1,3 +1,4 @@
+mod magnet;
 mod map;
 mod stroke;
 mod tile;

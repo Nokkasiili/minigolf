@@ -41,12 +41,12 @@ pub enum MapError {
 }
 
 impl AdSize {
-    pub fn get_ad_size(size: &Self) -> Vector2D<i32> {
+    pub fn get_ad_size(size: &Self) -> (usize, usize) {
         match size {
-            AdSize::Small => Vector2D { x: 3, y: 2 },
-            AdSize::Medium => Vector2D { x: 5, y: 3 },
-            AdSize::Large => Vector2D { x: 8, y: 5 },
-            AdSize::Full => Vector2D { x: 49, y: 25 },
+            AdSize::Small => (3, 2),
+            AdSize::Medium => (5, 3),
+            AdSize::Large => (8, 5),
+            AdSize::Full => (49, 25),
         }
     }
 }
@@ -152,6 +152,10 @@ impl Map {
         let y = index / (Map::WIDTH);
         let x = index % (Map::WIDTH);
         (x, y)
+    }
+
+    pub fn xy_to_index(x: usize, y: usize) -> usize {
+        y * Map::WIDTH + x
     }
 
     pub fn decode(s: String) -> Result<Map, MapError> {
