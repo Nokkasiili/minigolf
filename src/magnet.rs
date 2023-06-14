@@ -36,7 +36,7 @@ impl MagnetForces {
         self.forces.get(index).cloned()
     }
 
-    pub fn calculate_forces(magnets: &[Magnet]) -> Self {
+    pub fn new(magnets: &[Magnet]) -> Self {
         let mut forces = vec![[0, 0]; Self::MAGNETWIDTH * Self::MAGNETHEIGHT];
 
         for y in (2..Map::HEIGHT * Map::TILESIZE).step_by(5) {
@@ -112,7 +112,7 @@ mod tests {
             },
         ];
 
-        let magnet_forces = MagnetForces::calculate_forces(&magnets);
+        let magnet_forces = MagnetForces::new(&magnets);
 
         // Assert the forces for specific positions
         assert_eq!(magnet_forces.forces[121], [5, 0]);

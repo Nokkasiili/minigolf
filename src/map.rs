@@ -237,6 +237,7 @@ impl Map {
         }
     }
 }
+
 #[cfg(test)]
 mod tests {
     use super::*;

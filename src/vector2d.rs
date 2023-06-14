@@ -98,6 +98,17 @@ impl<T: Neg<Output = T>> Neg for Vector2D<T> {
     }
 }
 
+impl<T> Div<T> for Vector2D<T>
+where
+    T: Div<Output = T> + Copy,
+{
+    type Output = Vector2D<T>;
+
+    fn div(self, scalar: T) -> Vector2D<T> {
+        Vector2D::new(self.x / scalar, self.y / scalar)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
